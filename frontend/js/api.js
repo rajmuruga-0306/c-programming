@@ -704,4 +704,33 @@ async function apiDelete(url) {
   throw new Error('API endpoint not found: ' + url);
 }
 
+function addStudentNotification(studentId, icon, message) {
+  try {
+    const all = JSON.parse(localStorage.getItem('hh_notifications') || '[]');
+    all.push({
+      id: Date.now(),
+      student_id: studentId,
+      icon: icon,
+      message: message,
+      timestamp: new Date().toISOString(),
+      read: false
+    });
+    localStorage.setItem('hh_notifications', JSON.stringify(all));
+  } catch(e) {}
+}
+
+window.apiGet = apiGet;
+window.apiPost = apiPost;
+window.apiPut = apiPut;
+window.apiDelete = apiDelete;
+window.getToken = getToken;
+window.setToken = setToken;
+window.clearToken = clearToken;
+window.getUser = getUser;
+window.setUser = setUser;
+window.isAdmin = isAdmin;
+window.setRole = setRole;
+window.clearAuth = clearAuth;
+window.addStudentNotification = addStudentNotification;
+
 console.log('🏠 HostelHub running in standalone mode (no server needed)');
