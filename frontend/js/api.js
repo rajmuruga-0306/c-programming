@@ -46,12 +46,15 @@ function nextId(arr) {
 
 // ── Seed data (runs once on first visit) ──
 function seedDatabase() {
-  if (localStorage.getItem(DB_KEYS.initialized)) return;
+  // Always ensure default admin account exists
+  let admins = dbGet(DB_KEYS.admins);
+  if (!admins || !Array.isArray(admins) || admins.length === 0) {
+    dbSet(DB_KEYS.admins, [
+      { id: 1, username: 'admin', password: 'admin123' }
+    ]);
+  }
 
-  // Admin account
-  dbSet(DB_KEYS.admins, [
-    { id: 1, username: 'admin', password: 'admin123' }
-  ]);
+  if (localStorage.getItem(DB_KEYS.initialized)) return;
 
   // Hostel blocks
   dbSet(DB_KEYS.blocks, [
@@ -357,8 +360,10 @@ async function apiPost(url, body) {
   // POST /api/student/login
   if (url === '/api/student/login') {
     const students = dbGet(DB_KEYS.students);
-    const stu = students.find(s => s.email === body.email && s.password === body.password);
-    if (!stu) throw new Error('Invalid email or password');
+    const emailInput = (body.email || '').trim().toLowerCase();
+    const passInput = (body.password || '').trim();
+    const stu = students.find(s => s.email.toLowerCase() === emailInput && s.password === passInput);
+    if (!stu) throw new Error('Invalid student email or password');
     const token = generateToken();
     return {
       token: token,
@@ -368,9 +373,15 @@ async function apiPost(url, body) {
 
   // POST /api/admin/login
   if (url === '/api/admin/login') {
-    const admins = dbGet(DB_KEYS.admins);
-    const adm = admins.find(a => a.username === body.username && a.password === body.password);
-    if (!adm) throw new Error('Invalid admin username or password');
+    let admins = dbGet(DB_KEYS.admins);
+    if (!admins || admins.length === 0) {
+      admins = [{ id: 1, username: 'admin', password: 'admin123' }];
+      dbSet(DB_KEYS.admins, admins);
+    }
+    const userInput = (body.username || '').trim().toLowerCase();
+    const passInput = (body.password || '').trim();
+    const adm = admins.find(a => (a.username.toLowerCase() === userInput || (a.email && a.email.toLowerCase() === userInput)) && a.password === passInput);
+    if (!adm) throw new Error('Invalid admin username or password. Default is admin / admin123');
     const token = generateToken();
     return {
       token: token,
@@ -582,44 +593,6 @@ async function apiPost(url, body) {
     });
     dbSet(DB_KEYS.transactions, txns);
 
-    return { message: 'Payment successful! ₹' + bill.amount.toLocaleString('en-IN') + ' paid.' };
-  }
-
-  throw new Error('API endpoint not found: ' + url);
-}
-
-async function apiPut(url, body) {
-  await new Promise(r => setTimeout(r, 100 + Math.random() * 150));
-
-  // PUT /api/application/status-update/{id}
-  const statusMatch = url.match(/^\/api\/application\/status-update\/(\d+)$/);
-  if (statusMatch) {
-    const appId = parseInt(statusMatch[1]);
-    const apps = dbGet(DB_KEYS.applications);
-    const app = apps.find(a => a.id === appId);
-    if (!app) throw new Error('Application not found');
-    app.status = body.status;
-    dbSet(DB_KEYS.applications, apps);
-    return { message: 'Status updated to ' + body.status };
-  }
-
-  // PUT /api/rooms/update/{id}
-  const roomMatch = url.match(/^\/api\/rooms\/update\/(\d+)$/);
-  if (roomMatch) {
-    const roomId = parseInt(roomMatch[1]);
-    const rooms = dbGet(DB_KEYS.rooms);
-    const room = rooms.find(r => r.id === roomId);
-    if (!room) throw new Error('Room not found');
-    if (body.room_number !== undefined) room.room_number = body.room_number;
-    if (body.floor !== undefined) room.floor = parseInt(body.floor);
-    if (body.room_type !== undefined) room.room_type = body.room_type;
-    if (body.ac_type !== undefined) room.ac_type = body.ac_type;
-    if (body.capacity !== undefined) room.capacity = parseInt(body.capacity);
-    if (body.status !== undefined) room.status = body.status;
-    dbSet(DB_KEYS.rooms, rooms);
-    return { message: 'Room updated successfully' };
-  }
-
   // POST /api/admin/issue-bill (admin)
   if (url === '/api/admin/issue-bill') {
     const students = dbGet(DB_KEYS.students);
@@ -664,14 +637,39 @@ async function apiPut(url, body) {
     return { message: `Bill issued successfully to ${student.name}`, bill_id: newBill.id };
   }
 
-  // DELETE /api/admin/bills/delete/{id} (admin)
-  const delBillMatch = url.match(/^\/api\/admin\/bills\/delete\/(\d+)$/);
-  if (delBillMatch) {
-    const billId = parseInt(delBillMatch[1]);
-    let bills = dbGet(DB_KEYS.bills);
-    bills = bills.filter(b => b.id !== billId);
-    dbSet(DB_KEYS.bills, bills);
-    return { message: 'Bill cancelled/deleted successfully' };
+  throw new Error('API endpoint not found: ' + url);
+}
+
+async function apiPut(url, body) {
+  await new Promise(r => setTimeout(r, 100 + Math.random() * 150));
+
+  // PUT /api/application/status-update/{id}
+  const statusMatch = url.match(/^\/api\/application\/status-update\/(\d+)$/);
+  if (statusMatch) {
+    const appId = parseInt(statusMatch[1]);
+    const apps = dbGet(DB_KEYS.applications);
+    const app = apps.find(a => a.id === appId);
+    if (!app) throw new Error('Application not found');
+    app.status = body.status;
+    dbSet(DB_KEYS.applications, apps);
+    return { message: 'Status updated to ' + body.status };
+  }
+
+  // PUT /api/rooms/update/{id}
+  const roomMatch = url.match(/^\/api\/rooms\/update\/(\d+)$/);
+  if (roomMatch) {
+    const roomId = parseInt(roomMatch[1]);
+    const rooms = dbGet(DB_KEYS.rooms);
+    const room = rooms.find(r => r.id === roomId);
+    if (!room) throw new Error('Room not found');
+    if (body.room_number !== undefined) room.room_number = body.room_number;
+    if (body.floor !== undefined) room.floor = parseInt(body.floor);
+    if (body.room_type !== undefined) room.room_type = body.room_type;
+    if (body.ac_type !== undefined) room.ac_type = body.ac_type;
+    if (body.capacity !== undefined) room.capacity = parseInt(body.capacity);
+    if (body.status !== undefined) room.status = body.status;
+    dbSet(DB_KEYS.rooms, rooms);
+    return { message: 'Room updated successfully' };
   }
 
   throw new Error('API endpoint not found: ' + url);
@@ -691,6 +689,16 @@ async function apiDelete(url) {
     rooms = rooms.filter(r => r.id !== roomId);
     dbSet(DB_KEYS.rooms, rooms);
     return { message: 'Room deleted successfully' };
+  }
+
+  // DELETE /api/admin/bills/delete/{id} (admin)
+  const delBillMatch = url.match(/^\/api\/admin\/bills\/delete\/(\d+)$/);
+  if (delBillMatch) {
+    const billId = parseInt(delBillMatch[1]);
+    let bills = dbGet(DB_KEYS.bills);
+    bills = bills.filter(b => b.id !== billId);
+    dbSet(DB_KEYS.bills, bills);
+    return { message: 'Bill cancelled/deleted successfully' };
   }
 
   throw new Error('API endpoint not found: ' + url);
