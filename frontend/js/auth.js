@@ -23,13 +23,17 @@ function renderLoginPage() {
           <div id="admin-fields" class="hidden">
             <div class="form-group">
               <label>Username</label>
-              <input type="text" id="username" class="input">
+              <input type="text" id="username" class="input" placeholder="admin">
             </div>
+            <p style="font-size: 0.8rem; color: var(--primary); background: rgba(99,102,241,0.1); padding: 6px 12px; border-radius: 6px; margin-bottom: 1rem;">
+              🔑 <strong>Default Admin Credentials:</strong><br>
+              Username: <code style="color:var(--text-primary)">admin</code> | Password: <code style="color:var(--text-primary)">admin123</code>
+            </p>
           </div>
           
           <div class="form-group">
             <label>Password</label>
-            <input type="password" id="password" class="input" required>
+            <input type="password" id="password" class="input" required placeholder="••••••••">
           </div>
           
           <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Login 🔑</button>
@@ -66,18 +70,18 @@ function switchLoginTab(role) {
 async function handleLogin(e) {
   e.preventDefault();
   const isStudent = document.getElementById('tab-student').classList.contains('active');
-  const password = document.getElementById('password').value;
+  const password = document.getElementById('password').value.trim();
   
   try {
     if (isStudent) {
-      const email = document.getElementById('email').value;
+      const email = document.getElementById('email').value.trim();
       const res = await apiPost('/api/student/login', { email, password });
       setToken(res.token);
       setUser(res.user);
       setRole('student');
       window.location.hash = '#/student/dashboard';
     } else {
-      const username = document.getElementById('username').value;
+      const username = document.getElementById('username').value.trim();
       const res = await apiPost('/api/admin/login', { username, password });
       setToken(res.token);
       setUser(res.user);
