@@ -592,6 +592,8 @@ async function apiPost(url, body) {
       balance_after: Math.max(0, lastBalance - bill.amount)
     });
     dbSet(DB_KEYS.transactions, txns);
+    return { message: 'Payment processed successfully' };
+  }
 
   // POST /api/admin/issue-bill (admin)
   if (url === '/api/admin/issue-bill') {
