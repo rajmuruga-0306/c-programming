@@ -83,7 +83,8 @@ async function handleLogin(e) {
         setUser(res.user);
         setRole('admin');
         showToast('Logged in as Admin 🔑', 'success');
-        window.location.hash = '#/admin/dashboard';
+        if (window.location.hash === '#/admin/dashboard') router();
+        else window.location.hash = '#/admin/dashboard';
         return;
       }
       const res = await apiPost('/api/student/login', { email, password });
@@ -91,7 +92,8 @@ async function handleLogin(e) {
       setUser(res.user);
       setRole('student');
       showToast('Logged in successfully', 'success');
-      window.location.hash = '#/student/dashboard';
+      if (window.location.hash === '#/student/dashboard') router();
+      else window.location.hash = '#/student/dashboard';
     } else {
       const usernameInput = document.getElementById('username');
       const emailInput = document.getElementById('email');
@@ -102,7 +104,8 @@ async function handleLogin(e) {
       setUser(res.user);
       setRole('admin');
       showToast('Logged in as Admin 🔑', 'success');
-      window.location.hash = '#/admin/dashboard';
+      if (window.location.hash === '#/admin/dashboard') router();
+      else window.location.hash = '#/admin/dashboard';
     }
   } catch (err) {
     showToast(err.message, 'error');
