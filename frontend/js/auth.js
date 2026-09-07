@@ -69,26 +69,41 @@ function switchLoginTab(role) {
 
 async function handleLogin(e) {
   e.preventDefault();
-  const isStudent = document.getElementById('tab-student').classList.contains('active');
-  const password = document.getElementById('password').value.trim();
+  const isStudentTab = document.getElementById('tab-student').classList.contains('active');
+  const password = (document.getElementById('password').value || '').trim();
   
   try {
-    if (isStudent) {
-      const email = document.getElementById('email').value.trim();
+    if (isStudentTab) {
+      const email = (document.getElementById('email').value || '').trim();
+      // Auto-detect if user typed admin username on student tab
+      if (email.toLowerCase() === 'admin') {
+        switchLoginTab('admin');
+        const res = await apiPost('/api/admin/login', { username: 'admin', password });
+        setToken(res.token);
+        setUser(res.user);
+        setRole('admin');
+        showToast('Logged in as Admin 🔑', 'success');
+        window.location.hash = '#/admin/dashboard';
+        return;
+      }
       const res = await apiPost('/api/student/login', { email, password });
       setToken(res.token);
       setUser(res.user);
       setRole('student');
+      showToast('Logged in successfully', 'success');
       window.location.hash = '#/student/dashboard';
     } else {
-      const username = document.getElementById('username').value.trim();
+      const usernameInput = document.getElementById('username');
+      const emailInput = document.getElementById('email');
+      const username = ((usernameInput && usernameInput.value) || (emailInput && emailInput.value) || '').trim();
+      
       const res = await apiPost('/api/admin/login', { username, password });
       setToken(res.token);
       setUser(res.user);
       setRole('admin');
+      showToast('Logged in as Admin 🔑', 'success');
       window.location.hash = '#/admin/dashboard';
     }
-    showToast('Logged in successfully', 'success');
   } catch (err) {
     showToast(err.message, 'error');
   }
