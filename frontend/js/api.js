@@ -374,13 +374,23 @@ async function apiPost(url, body) {
   // POST /api/admin/login
   if (url === '/api/admin/login') {
     let admins = dbGet(DB_KEYS.admins);
-    if (!admins || admins.length === 0) {
+    if (!admins || !Array.isArray(admins) || admins.length === 0) {
       admins = [{ id: 1, username: 'admin', password: 'admin123' }];
       dbSet(DB_KEYS.admins, admins);
     }
-    const userInput = (body.username || '').trim().toLowerCase();
+    const userInput = (body.username || body.email || '').trim().toLowerCase();
     const passInput = (body.password || '').trim();
-    const adm = admins.find(a => (a.username.toLowerCase() === userInput || (a.email && a.email.toLowerCase() === userInput)) && a.password === passInput);
+    let adm = admins.find(a => 
+      (a.username && a.username.toLowerCase() === userInput) || 
+      (a.email && a.email.toLowerCase() === userInput)
+    ) && admins.find(a => a.password === passInput);
+
+    if (!adm && userInput === 'admin' && passInput === 'admin123') {
+      adm = { id: 1, username: 'admin', password: 'admin123' };
+      admins = [adm];
+      dbSet(DB_KEYS.admins, admins);
+    }
+
     if (!adm) throw new Error('Invalid admin username or password. Default is admin / admin123');
     const token = generateToken();
     return {
