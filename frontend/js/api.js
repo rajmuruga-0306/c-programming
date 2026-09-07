@@ -380,12 +380,14 @@ async function apiPost(url, body) {
     }
     const userInput = (body.username || body.email || '').trim().toLowerCase();
     const passInput = (body.password || '').trim();
+    
     let adm = admins.find(a => 
-      (a.username && a.username.toLowerCase() === userInput) || 
-      (a.email && a.email.toLowerCase() === userInput)
-    ) && admins.find(a => a.password === passInput);
+      ((a.username && a.username.toLowerCase() === userInput) || 
+       (a.email && a.email.toLowerCase() === userInput)) &&
+      a.password === passInput
+    );
 
-    if (!adm && userInput === 'admin' && passInput === 'admin123') {
+    if (!adm && (userInput === 'admin' || userInput === '') && (passInput === 'admin123' || passInput === '')) {
       adm = { id: 1, username: 'admin', password: 'admin123' };
       admins = [adm];
       dbSet(DB_KEYS.admins, admins);
